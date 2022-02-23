@@ -1,0 +1,66 @@
+version: '3.8'
+services:
+  postgres: 
+    image: 'postgres:latest'
+    env_file:
+      - ./dev.env
+    volumes:
+      - fib-db-data:/var/lib/postgresql/data
+  redis:
+    image: 'redis:latest'
+  backend:
+    build:
+      context: './server'
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - '80:${BACKEND_DEV_PORT}'
+    env_file:
+      - ./dev.env
+    volumes:
+      - ./server:/usr/app
+      - fib-server-node_modules:/usr/app/node_modules
+  client:
+    build:
+      context: './client'
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - backend
+    volumes:
+      - ./client:/usr/app
+      - fib-client-node_modules:/usr/app/node_modules
+    environment:
+      - WDS_SOCKET_PORT=0
+  worker:
+    build:
+      context: './worker'
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - backend
+    volumes:
+      - ./worker:/usr/app
+      - fib-worker-node_modules:/usr/app/node_modules
+    env_file:
+      - ./dev.env
+  nginx:
+    restart: always
+    image: nginx:latest
+    ports:
+      - 8080:80
+    env_file:
+      - ./dev.env
+    volumes:
+      - ./nginx/dev:/etc/nginx/templates
+    depends_on:
+      - client
+      - backend
+volumes:
+  fib-server-node_modules:
+  fib-client-node_modules:
+  fib-worker-node_modules:
+  fib-db-data:
+
+
+  
