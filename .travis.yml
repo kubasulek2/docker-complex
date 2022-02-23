@@ -1,0 +1,20 @@
+sudo: required
+services:
+  - docker
+
+before_install: 
+  - docker build -t kubasulek2/complex-client-test -f ./client/Dockerfile.dev ./client
+script:
+  -  docker run -e CI=true kubasulek2/react-test yarn test
+
+after_success: 
+  - docker build -t kubasulek2/complex-client ./client
+  - docker build -t kubasulek2/complex-worker ./worker
+  - docker build -t kubasulek2/complex-server ./server
+  - docker build -t kubasulek2/complex-nginx ./nginx
+  # Login to the docker CLI
+  - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_ID} --password-stdin
+  - docker push kubasulek2/complex-client
+  - docker push kubasulek2/complex-nginx
+  - docker push kubasulek2/complex-server
+  - docker push kubasulek2/complex-worker
